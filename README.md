@@ -1,7 +1,6 @@
 # Orange Assemblies: A Modular Portfolio System
 
-![Orange Assemblies Thumbnail - Placeholder for a good project image](https://via.placeholder.com/600x400?text=Orange+Assemblies+Preview)
-*(Consider replacing this placeholder with a screenshot or GIF of your live project!)*
+![Orange Assemblies Thumbnail - Placeholder for a good project image](https://raw.githubusercontent.com/hartswf0/orange-assemblies/e18f54d89192ee123d888a1c416a8471ecb80ccb/20250616_1447_Modular%20Citrus%20Portfolio_simple_compose_01jxx10c6rfc0t8w89b61nddzf.png)
 
 ## About The Project
 
