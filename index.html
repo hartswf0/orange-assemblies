@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orange Assemblies — A Modular Portfolio System</title>
+    <style>
+        :root {
+            --bg: #FFE15D;
+            --orange: #FF6A00;
+            --seg-inner: #F99F2A; /* Color for the visual inner segments */
+            --seg-dot: #FF6A00; /* Color for the interactive dots */
+            --border: #000;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'JetBrains Mono', 'Space Grotesk', monospace;
+            background: var(--bg);
+            color: var(--border);
+            overflow-x: hidden;
+            cursor: crosshair;
+        }
+        
+        .intro {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 1000;
+            background: var(--bg);
+            padding: 2rem;
+            border-radius: 20px;
+            border: 2px solid var(--border);
+            max-width: 400px;
+            transition: all 0.5s ease;
+        }
+        
+        .intro.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translate(-50%, -50%) scale(0.8);
+        }
+        
+        .intro h1 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+        
+        .intro p {
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+        
+        .intro button {
+            background: var(--orange);
+            border: 2px solid var(--border);
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+        
+        .intro button:hover {
+            transform: scale(1.05);
+            box-shadow: 4px 4px 0 var(--border);
+        }
+        
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 1rem;
+            background: var(--bg);
+            border-bottom: 2px solid var(--border);
+            z-index: 100;
+        }
+        
+        .header h2 {
+            font-size: 1rem;
+            text-transform: uppercase;
+        }
+        
+        .grove {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            padding: 6rem 2rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .orange {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+            cursor: crosshair; 
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .orange:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 0 rgba(0,0,0,0.1); 
+        }
+        
+        .shadow {
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 20px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            z-index: 0; 
+        }
+        
+        .orange:hover .shadow {
+            transform: translateX(-50%) scale(1.1); 
+        }
+
+        .orange-svg {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1; 
+        }
+
+        /* --- Whole Orange Group (Default State) --- */
+        .whole-orange-group {
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        .orange:hover .whole-orange-group {
+            opacity: 0; 
+        }
+        
+        .whole-orange-body {
+            fill: var(--orange);
+            stroke: var(--border);
+            stroke-width: 2;
+            /* REMOVED: filter: drop-shadow(0 4px 0 var(--border)); */ 
+        }
+
+        /* --- Sliced Orange Group (Revealed on Hover) --- */
+        .sliced-orange-group {
+            opacity: 0; 
+            transition: opacity 0.3s ease;
+        }
+
+        .orange:hover .sliced-orange-group {
+            opacity: 1; 
+        }
+
+        .sliced-orange-body {
+            fill: var(--seg-inner); 
+            stroke: var(--border);
+            stroke-width: 2;
+        }
+
+        .slice-line {
+            stroke: var(--border);
+            stroke-width: 2;
+        }
+        
+        /* --- Interactive Segments (Dots) --- */
+        .interactive-segments { 
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0; 
+            transition: opacity 0.3s ease;
+            width: 0; 
+            height: 0;
+            z-index: 2; 
+            pointer-events: none; 
+        }
+        
+        .orange:hover .interactive-segments { 
+            opacity: 1; 
+            pointer-events: auto; 
+        }
+
+        .segment-dot { 
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: var(--seg-dot); 
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            cursor: pointer; 
+            transition: all 0.2s ease;
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.2); 
+        }
+
+        .segment-dot.hidden {
+            display: none; /* Hide dots for non-existent segments */
+        }
+        
+        .segment-dot:hover {
+            transform: scale(1.1);
+            background: var(--seg-inner); 
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+        }
+        
+        .project-label {
+            position: absolute;
+            bottom: -40px; /* Adjusted for more room, allow for 2 lines */
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            text-align: center; /* Center multi-line text */
+            width: 100%; /* Ensure it uses available width for wrapping */
+            line-height: 1.2; 
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 225, 93, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.5s ease;
+            z-index: 1000;
+        }
+        
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .modal-content {
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            transform: scale(0.8);
+            transition: all 0.5s ease;
+            display: flex; /* Flexbox for internal layout */
+            flex-direction: column; /* Stack title, body, and nav vertically */
+        }
+        
+        .modal.active .modal-content {
+            transform: scale(1);
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--orange);
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .close-btn:hover {
+            transform: rotate(90deg);
+        }
+        
+        .modal h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+        
+        .modal p {
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+        
+        .modal img {
+            width: 100%;
+            border-radius: 10px;
+            margin: 1rem 0;
+            border: 2px solid var(--border);
+        }
+        
+        .modal pre {
+            background: #fff;
+            padding: 1rem;
+            border-radius: 10px;
+            border: 2px solid var(--border);
+            overflow-x: auto;
+            font-family: inherit;
+            font-size: 0.8rem;
+        }
+
+        /* Modal Navigation Dots */
+        .modal-navigation {
+            display: flex;
+            justify-content: center;
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(0,0,0,0.1); /* Subtle separator */
+            flex-shrink: 0; /* Prevent it from shrinking */
+        }
+
+        .modal-nav-dot {
+            width: 12px;
+            height: 12px;
+            background: var(--seg-dot); /* Use orange color */
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            margin: 0 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .modal-nav-dot.active {
+            background: var(--orange); /* Highlight active dot */
+            border: 2px solid var(--border);
+            transform: scale(1.2);
+            box-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+        }
+
+        .modal-nav-dot:hover:not(.active) {
+            transform: scale(1.1);
+            background: var(--seg-inner); /* Slightly different color on hover */
+        }
+
+        /* Ensure modal-body takes available space */
+        #modal-body {
+            flex-grow: 1;
+            overflow-y: auto; /* Allow scrolling within the body */
+            margin-bottom: 1rem; /* Space before navigation */
+        }
+        
+        @media (max-width: 768px) {
+            .grove {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 1rem;
+                padding-top: 5rem;
+            }
+            
+            .orange {
+                width: 150px;
+                height: 150px;
+            }
+            
+            .segment-dot { 
+                width: 40px;
+                height: 40px;
+                font-size: 0.6rem;
+            }
+            
+            .project-label {
+                font-size: 0.7rem;
+                bottom: -30px; /* Adjust for smaller screens */
+            }
+
+            .intro {
+                max-width: 300px;
+                padding: 1.5rem;
+            }
+
+            .modal-content {
+                padding: 1rem;
+            }
+
+            .modal h3 {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="intro" id="intro">
+        <h1>Orange Assemblies</h1>
+        <p>A citrus-coded system for modular creativity. This is not a portfolio. This is a groove.</p>
+        <button onclick="closeIntro()">Touch to recompose</button>
+    </div>
+
+    <header class="header">
+        <h2>ORANGE ASSEMBLIES — MODULAR PORTFOLIO SYSTEM</h2>
+    </header>
+
+    <main class="grove" id="grove">
+        <!-- Projects will be dynamically generated -->
+    </main>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">×</button>
+            <h3 id="modal-title"></h3>
+            <div id="modal-body"></div>
+            <div class="modal-navigation" id="modal-navigation-dots">
+                <!-- Navigation dots will be dynamically generated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const projects = [
+            {
+                id: 1,
+                title: "CODE PEEL - Generative Art",
+                segments: [
+                    { id: "01", type: "text", content: "Exploration into cellular automata for organic pattern generation. Each cell's simple rules combine to create complex, emergent behaviors, demonstrating the beauty of algorithmic design." },
+                    { id: "02", type: "image", content: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23FFE15D'/%3E%3Crect x='50' y='50' width='100' height='100' fill='none' stroke='%23000' stroke-width='2'/%3E%3Cpath d='M50,50 L150,150 M150,50 L50,150' stroke='%23FF6A00' stroke-width='3'/%3E%3Ccircle cx='100' cy='100' r='20' fill='%23F99F2A'/%3E%3C/svg%3E" },
+                    { id: "03", type: "code", content: "function updateCell(grid, x, y) {\n  const neighbors = countLiveNeighbors(grid, x, y);\n  const currentState = grid[y][x];\n  if (currentState === 1 && (neighbors < 2 || neighbors > 3)) return 0; // Underpopulation or Overpopulation\n  if (currentState === 0 && neighbors === 3) return 1; // Reproduction\n  return currentState;\n}" }
+                ]
+            },
+            {
+                id: 2,
+                title: "SYNTH GROOVE - Web Audio UI",
+                segments: [
+                    { id: "01", type: "text", content: "A modular synthesizer interface built entirely with the Web Audio API. Users can connect virtual cables between oscillators, filters, and effects to create evolving soundscapes. Focus on intuitive patching and real-time responsiveness." },
+                    { id: "02", type: "image", content: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23FFE15D'/%3E%3Crect x='20' y='20' width='160' height='160' fill='none' stroke='%23000' stroke-width='2'/%3E%3Ccircle cx='60' cy='60' r='25' fill='%23FF6A00'/%3E%3Ccircle cx='140' cy='60' r='25' fill='%23FF6A00'/%3E%3Crect x='40' y='120' width='120' height='40' fill='%23F99F2A' stroke='%23000' stroke-width='2'/%3E%3Cpath d='M60,85 L60,120 M140,85 L140,120' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E" },
+                    { id: "03", type: "code", content: "const audioContext = new (window.AudioContext || window.webkitAudioContext)();\nconst oscillator = audioContext.createOscillator();\nconst gainNode = audioContext.createGain();\n\noscillator.type = 'sawtooth';\noscillator.frequency.setValueAtTime(440, audioContext.currentTime);\n\noscillator.connect(gainNode);\ngainNode.connect(audioContext.destination);\n\ngainNode.gain.setValueAtTime(0.5, audioContext.currentTime);\noscillator.start();" },
+                    { id: "04", type: "text", content: "The challenge was optimizing audio performance for low-latency feedback across various devices, ensuring a smooth and glitch-free user experience even with complex patch configurations." }
+                ]
+            },
+            {
+                id: 3,
+                title: "POSTER SYSTEM - Grid & Color",
+                segments: [
+                    { id: "01", type: "text", content: "A generative design tool for creating unique posters based on user-defined grid constraints and color palettes. Explores the balance between randomness and strict visual rules." },
+                    { id: "02", type: "image", content: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23FFE15D'/%3E%3Crect x='20' y='20' width='160' height='160' fill='none' stroke='%23000' stroke-width='2'/%3E%3Cline x1='20' y1='100' x2='180' y2='100' stroke='%23000' stroke-width='1'/%3E%3Cline x1='100' y1='20' x2='100' y2='180' stroke='%23000' stroke-width='1'/%3E%3Crect x='40' y='40' width='60' height='60' fill='%23FF6A00'/%3E%3Crect x='100' y='100' width='60' height='60' fill='%23F99F2A'/%3E%3C/svg%3E" },
+                    { id: "03", type: "code", content: "const generateGrid = (cols, rows) => {\n  const grid = [];\n  for (let r = 0; r < rows; r++) {\n    for (let c = 0; c < cols; c++) {\n      grid.push({ x: c, y: r, color: getRandomColor() });\n    }\n  }\n  return grid;\n};" },
+                    { id: "04", type: "text", content: "The system allows for exporting high-resolution vector graphics, making it suitable for both digital and print media applications." }
+                ]
+            },
+            {
+                id: 4,
+                title: "DATA JUICE - Animated Viz",
+                segments: [
+                    { id: "01", type: "text", content: "A data visualization framework that transforms static spreadsheets into dynamic, animated narratives. Uses particle systems and organic motion to make data insights more engaging and intuitive." },
+                    { id: "02", type: "image", content: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23FFE15D'/%3E%3Cpath d='M30,170 Q100,30 170,170' stroke='%23FF6A00' stroke-width='4' fill='none'/%3E%3Ccircle cx='30' cy='170' r='5' fill='%23000'/%3E%3Ccircle cx='70' cy='100' r='5' fill='%23000'/%3E%3Ccircle cx='100' cy='70' r='5' fill='%23000'/%3E%3Ccircle cx='130' cy='100' r='5' fill='%23000'/%3E%3Ccircle cx='170' cy='170' r='5' fill='%23000'/%3E%3C/svg%3E" },
+                    { id: "03", type: "code", content: "const animateParticles = (data, targetViz) => {\n  data.forEach(d => {\n    const particle = createParticle(d);\n    gsap.to(particle, { \n      x: targetViz.x(d.value),\n      y: targetViz.y(d.category),\n      duration: 1.5,\n      ease: 'power2.out'\n    });\n  });\n};" },
+                    { id: "04", type: "image", content: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23FFE15D'/%3E%3Ccircle cx='100' cy='100' r='70' fill='none' stroke='%23000' stroke-width='2'/%3E%3Cpath d='M100,30 A70 70 0 0 1 170,100 L100,100 Z' fill='%23FF6A00'/%3E%3Cpath d='M170,100 A70 70 0 0 1 100,170 L100,100 Z' fill='%23F99F2A'/%3E%3Cpath d='M100,170 A70 70 0 0 1 30,100 L100,100 Z' fill='%23FF6A00'/%3E%3Cpath d='M30,100 A70 70 0 0 1 100,30 L100,100 Z' fill='%23F99F2A'/%3E%3C/svg%3E" },
+                    { id: "05", type: "text", content: "This system was developed to assist non-technical stakeholders in understanding complex datasets through intuitive visual metaphors, making data accessible to a wider audience." }
+                ]
+            },
+            {
+                id: 5,
+                title: "TYPE LOOP - Kinetic Type",
+                segments: [
+                    { id: "01", type: "text", content: "A kinetic typography system where individual letters dynamically respond to the rhythm and sentiment of text. Each character is treated as an independent actor in a choreographed visual performance." },
+                    { id: "02", type: "image", content: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23FFE15D'/%3E%3Ctext x='100' y='80' text-anchor='middle' font-size='50' fill='%23000' font-family='monospace'%3ET</text%3E%3Ctext x='100' y='130' text-anchor='middle' font-size='50' fill='%23FF6A00' font-family='monospace'%3Y</text%3E%3C/svg%3E" },
+                    { id: "03", type: "code", content: "@keyframes letterDance {\n  0%, 100% { transform: translateY(0) rotate(0deg); }\n  25% { transform: translateY(-10px) rotate(5deg); }\n  75% { transform: translateY(10px) rotate(-5deg); }\n}\n.animated-letter {\n  display: inline-block;\n  animation: letterDance 1.5s ease-in-out infinite alternate;\n}" },
+                    { id: "04", type: "text", content: "Key features include real-time text input, customizable animation presets, and integration with audio analysis for synchronized motion." },
+                    { id: "05", type: "image", content: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23FFE15D'/%3E%3Crect x='30' y='30' width='140' height='140' fill='none' stroke='%23000' stroke-width='2'/%3E%3Ctext x='100' y='105' text-anchor='middle' font-size='80' font-weight='bold' fill='%23FF6A00'%3EL</text%3E%3C/svg%3E" },
+                    { id: "06", type: "code", content: "const applyMotion = (textNode, settings) => {\n  textNode.split('').forEach(char => {\n    const span = document.createElement('span');\n    span.textContent = char;\n    span.style.animationDelay = `${Math.random() * 0.5}s`;\n    span.classList.add('animated-letter');\n    textNode.parentNode.appendChild(span);\n  });\n};\n" }
+                ]
+            },
+            {
+                id: 6,
+                title: "COLOR HARVEST - AI Palette",
+                segments: [
+                    { id: "01", type: "text", content: "An AI-powered tool for generating harmonious color palettes, inspired by vintage design manuals and natural aesthetics. It extracts dominant and complementary colors from uploaded images or user-defined mood inputs." },
+                    { id: "02", type: "image", content: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23FFE15D'/%3E%3Crect x='20' y='20' width='40' height='160' fill='%23FF6A00'/%3E%3Crect x='70' y='20' width='40' height='160' fill='%23F99F2A'/%3E%3Crect x='120' y='20' width='40' height='160' fill='%23FFE15D' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E" },
+                    { id: "03", type: "code", content: "async function extractColors(imageUrl, options) {\n  const response = await fetch('/api/color-extract', {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({ imageUrl, options }),\n  });\n  return response.json();\n}" }
+                ]
+            },
+            {
+                id: 7,
+                title: "MOTION STUDY - UI Physics",
+                segments: [
+                    { id: "01", type: "text", content: "A research project exploring the application of real-world physics principles (mass, friction, springiness) to digital user interfaces. The goal is to create more tactile and intuitive interactions that feel natural." },
+                    { id: "02", type: "image", content: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23FFE15D'/%3E%3Cpath d='M20,100 C80,20 120,180 180,100' fill='none' stroke='%23000' stroke-width='4'/%3E%3Ccircle cx='20' cy='100' r='10' fill='%23FF6A00'/%3E%3Ccircle cx='180' cy='100' r='10' fill='%23F99F2A'/%3E%3C/svg%3E" },
+                    { id: "03", type: "code", content: "const springSimulation = (value, target, velocity, stiffness, damping) => {\n  const force = -stiffness * (value - target) - damping * velocity;\n  const acceleration = force / mass; // 'mass' would be a global/context var\n  const newVelocity = velocity + acceleration * deltaTime;\n  const newValue = value + newVelocity * deltaTime;\n  return { value: newValue, velocity: newVelocity };\n};" },
+                    { id: "04", type: "text", content: "Prototyping was done with various libraries, including `react-spring` and `framer-motion`, to compare performance and implementation complexity." },
+                    { id: "05", type: "image", content: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23FFE15D'/%3E%3Cpath d='M50,50 L150,50 L150,150 L50,150 Z' fill='none' stroke='%23000' stroke-width='2'/%3E%3Ccircle cx='75' cy='75' r='10' fill='%23FF6A00'/%3E%3Ccircle cx='125' cy='125' r='10' fill='%23F99F2A'/%3E%3Cline x1='75' y1='75' x2='125' y2='125' stroke='%23000' stroke-width='1'/%3E%3C/svg%3E" }
+                ]
+            },
+            {
+                id: 8,
+                title: "GRID PLAY - Interactive Grid",
+                segments: [
+                    { id: "01", type: "text", content: "An interactive grid system that responds to touch, mouse input, and even musical cues. It acts as a visual instrument for spatial composition, allowing users to create patterns and effects in real-time." },
+                    { id: "02", type: "image", content: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23FFE15D'/%3E%3Cg stroke='%23000' stroke-width='1'%3E%3Cline x1='0' y1='50' x2='200' y2='50'/%3E%3Cline x1='0' y1='100' x2='200' y2='100'/%3E%3Cline x1='0' y1='150' x2='200' y2='150'/%3E%3Cline x1='50' y1='0' x2='50' y2='200'/%3E%3Cline x1='100' y1='0' x2='100' y2='200'/%3E%3Cline x1='150' y1='0' x2='150' y2='200'/%3E%3C/g%3E%3Ccircle cx='75' cy='75' r='15' fill='%23FF6A00'/%3E%3Ccircle cx='125' cy='125' r='15' fill='%23F99F2A'/%3E%3C/svg%3E" },
+                    { id: "03", type: "code", content: "const createResponsiveGrid = (element, cellsX, cellsY) => {\n  const grid = new GridSystem(element, cellsX, cellsY);\n  window.addEventListener('resize', () => grid.recalculateCellSizes());\n  grid.onCellInteraction((x, y, type) => {\n    if (type === 'click') playFeedbackSound(x, y);\n    grid.highlightCell(x, y);\n  });\n  return grid;\n};" }
+                ]
+            },
+            {
+                id: 9,
+                title: "NEON DREAMS - Cyberpunk Aesthetic",
+                segments: [
+                    { id: "01", type: "text", content: "A visual system exploring cyberpunk aesthetics through glowing vector lines, intentional digital glitches, and a limited, high-contrast color palette. A study in controlled digital decay and futuristic interfaces." },
+                    { id: "02", type: "image", content: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23000'/%3E%3Cpath d='M20,20 L180,180 M180,20 L20,180' stroke='%23FF6A00' stroke-width='4' filter='url(%23glow)'/%3E%3Ccircle cx='100' cy='100' r='50' fill='none' stroke='%23F99F2A' stroke-width='2' filter='url(%23glow)'/%3E%3Cdefs%3E%3Cfilter id='glow'%3E%3CfeGaussianBlur stdDeviation='3' result='coloredBlur'/%3E%3CfeMerge%3E%3CfeMergeNode in='coloredBlur'/%3E%3CfeMergeNode in='SourceGraphic'/%3E%3C/feMerge%3E%3C/filter%3E%3C/defs%3E%3C/svg%3E" },
+                    { id: "03", type: "code", content: "const applyGlitch = (element, intensity = 0.5, frequency = 0.1) => {\n  gsap.to(element, { \n    x: () => (Math.random() - 0.5) * intensity * 10,\n    y: () => (Math.random() - 0.5) * intensity * 10,\n    ease: 'steps(1)',\n    repeat: -1,\n    yoyo: true,\n    duration: frequency,\n    stagger: { each: 0.05, from: 'random' }\n  });\n};" }
+                ]
+            },
+            {
+                id: 10,
+                title: "UI/UX FLOW - Wireframes & Prototypes",
+                segments: [
+                    { id: "01", type: "text", content: "A deep dive into user flow analysis and wireframing for complex web applications. Focused on intuitive navigation and optimizing user journeys through iterative prototyping and testing." },
+                    { id: "02", type: "image", content: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23FFE15D'/%3E%3Crect x='20' y='30' width='60' height='40' fill='none' stroke='%23000' stroke-width='2'/%3E%3Crect x='120' y='30' width='60' height='40' fill='none' stroke='%23000' stroke-width='2'/%3E%3Cpath d='M80,50 L120,50' stroke='%23000' stroke-width='2' marker-end='url(%23arrow)'/%3E%3Crect x='70' y='120' width='60' height='40' fill='none' stroke='%23000' stroke-width='2'/%3E%3Cpath d='M50,70 L50,120 L70,120' stroke='%23000' stroke-width='2' marker-end='url(%23arrow)'/%3E%3Cdefs%3E%3Cmarker id='arrow' markerWidth='10' markerHeight='10' refX='0' refY='3' orient='auto' markerUnits='strokeWidth'%3E%3Cpath d='M0,0 L0,6 L9,3 z' fill='%23000'/%3E%3C/marker%3E%3C/defs%3E%3C/svg%3E" },
+                    { id: "03", type: "text", content: "Tools utilized include Figma for wireframing and prototyping, UserTesting.com for usability studies, and Miro for collaborative whiteboarding sessions with clients and team members." },
+                    { id: "04", type: "image", content: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23FFE15D'/%3E%3Crect x='30' y='30' width='140' height='140' fill='none' stroke='%23000' stroke-width='2'/%3E%3Ccircle cx='100' cy='100' r='20' fill='%23FF6A00'/%3E%3Crect x='70' y='70' width='60' height='60' fill='none' stroke='%23F99F2A' stroke-width='2'/%3E%3C/svg%3E" },
+                    { id: "05", type: "text", content: "Iterative design cycles were crucial for this project, allowing rapid adjustments based on user feedback and A/B testing results, leading to a highly refined and user-centric final product." },
+                    { id: "06", type: "code", content: "const createPrototype = (flows, interactions) => {\n  // Logic to generate interactive prototype based on flows and interactions\n  console.log('Generating prototype...');\n  return new Prototype(flows, interactions);\n};" }
+                ]
+            },
+            {
+                id: 11,
+                title: "3D RENDER - Product Design",
+                segments: [
+                    { id: "01", type: "text", content: "High-fidelity 3D product rendering for a smart home device. Focused on realistic material textures, lighting, and environmental integration to showcase the product's aesthetic appeal and functionality." },
+                    { id: "02", type: "image", content: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23FFE15D'/%3E%3Cpath d='M50,150 L150,150 L150,50 L50,50 Z' fill='none' stroke='%23000' stroke-width='2'/%3E%3Cpath d='M50,50 L70,30 L170,30 L150,50 Z' fill='none' stroke='%23000' stroke-width='2'/%3E%3Cpath d='M150,50 L170,30 L170,130 L150,150 Z' fill='none' stroke='%23000' stroke-width='2'/%3E%3Ccircle cx='100' cy='100' r='30' fill='%23FF6A00' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E" },
+                    { id: "03", type: "text", content: "Software used includes Blender for modeling and rendering, Substance Painter for texturing, and Photoshop for post-processing and final composition." }
+                ]
+            },
+            {
+                id: 12,
+                title: "BRAND GUIDE - Visual Identity",
+                segments: [
+                    { id: "01", type: "text", content: "Development of a comprehensive brand identity system, including logo design, typography guidelines, color palettes, and application across various touchpoints. Aimed at creating a cohesive and memorable brand presence." },
+                    { id: "02", type: "image", content: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23FFE15D'/%3E%3Crect x='50' y='50' width='100' height='100' fill='%23FF6A00'/%3E%3Ctext x='100' y='105' text-anchor='middle' font-size='60' font-weight='bold' fill='%23F99F2A'%3BA</text%3E%3C/svg%3E" },
+                    { id: "03", type: "image", content: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23FFE15D'/%3E%3Crect x='20' y='20' width='30' height='160' fill='%23FF6A00'/%3E%3Crect x='60' y='20' width='30' height='160' fill='%23F99F2A'/%3E%3Crect x='100' y='20' width='30' height='160' fill='%23FF6A00'/%3E%3Crect x='140' y='20' width='30' height='160' fill='%23F99F2A'/%3E%3C/svg%3E" },
+                    { id: "04", type: "text", content: "This project emphasized stakeholder collaboration to translate core brand values into tangible visual assets. The final style guide ensures consistency across all future marketing and product development efforts." }
+                ]
+            }
+        ];
+
+        /* ---------- ORANGE FACTORY ---------- */
+        function createOrange(project) {
+            const orange = document.createElement('div');
+            orange.className = 'orange';
+            orange.dataset.projectId = project.id;
+            
+            // Generate lines for 6 slices (60 degrees apart) inside the sliced-orange-group
+            let sliceLinesSvg = '';
+            const numFixedVisualSlices = 6; // Always show 6 visual slices for consistency
+            const innerRadius = 20; // Radius for the central circle
+            const outerRadius = 80; // Radius of the main orange body
+
+            // Central circle for the sliced view
+            sliceLinesSvg += `<circle cx="100" cy="100" r="${innerRadius}" fill="var(--orange)" stroke="var(--border)" stroke-width="2"/>`;
+
+            // Lines for the slices
+            for (let i = 0; i < numFixedVisualSlices; i++) {
+                const angle = i * (360 / numFixedVisualSlices) * Math.PI / 180; // Angle in radians
+                const x1 = 100 + innerRadius * Math.cos(angle);
+                const y1 = 100 + innerRadius * Math.sin(angle);
+                const x2 = 100 + outerRadius * Math.cos(angle);
+                const y2 = 100 + outerRadius * Math.sin(angle);
+                sliceLinesSvg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="slice-line"/>`;
+            }
+
+            // Generate interactive segments (dots) - ALWAYS 6 dots
+            let interactiveDotsHtml = '';
+            const totalDotPositions = 6; // Fixed number of positions for consistency
+            for (let i = 0; i < totalDotPositions; i++) {
+                const segmentData = project.segments[i]; // Get data for this position
+                const isHiddenClass = segmentData ? '' : 'hidden'; // Add 'hidden' class if no data
+                const segmentId = segmentData ? segmentData.id : ''; // Get ID if exists
+
+                interactiveDotsHtml += `
+                    <div class="segment-dot ${isHiddenClass}" data-segment="${segmentId}" onclick="openSegment(${project.id}, ${i})">
+                        ${segmentId}
+                    </div>
+                `;
+            }
+
+            orange.innerHTML = `
+                <div class="shadow"></div>
+                <svg class="orange-svg" viewBox="0 0 200 200">
+                    <g class="whole-orange-group">
+                        <circle cx="100" cy="100" r="80" class="whole-orange-body"/>
+                    </g>
+                    <g class="sliced-orange-group">
+                        <circle cx="100" cy="100" r="80" class="sliced-orange-body"/>
+                        ${sliceLinesSvg}
+                    </g>
+                </svg>
+
+                <!-- Interactive segments (dots) -->
+                <div class="interactive-segments">
+                    ${interactiveDotsHtml}
+                </div>
+                <div class="project-label">PROJECT ${String(project.id).padStart(2, '0')} — ${project.title}</div>
+            `;
+            
+            // No direct click action on the orange body anymore.
+            // Hover handles visual state, dots handle click.
+            orange.addEventListener('click', function(e) {
+                // Only allow clicks on segment-dots to trigger modal
+                if (!e.target.classList.contains('segment-dot')) {
+                    // Do nothing or add a subtle general click feedback if desired
+                }
+            });
+            
+            return orange;
+        }
+
+        /* ---------- SEGMENT POSITIONING (interactive dots) ---------- */
+        function arrangeSegmentsRadially() {
+            const allInteractiveSegmentsContainers = document.querySelectorAll('.interactive-segments'); 
+
+            allInteractiveSegmentsContainers.forEach(container => {
+                const segments = container.querySelectorAll('.segment-dot'); 
+                const totalDotPositions = 6; // Always 6 positions for consistent spacing
+                const orangeSize = container.closest('.orange').offsetWidth;
+                const orangeRadius = orangeSize / 2; // Radius of the orange container
+
+                // Positioning radius for the dots, adjusted to sit on the slices
+                // Let's aim for a point that's approximately 60% out from the center
+                // to sit nicely within the slice. Adjust this value for perfect alignment.
+                const positioningRadius = orangeRadius * 0.6; 
+
+                segments.forEach((seg, index) => {
+                    // Calculate angle for each of the 6 fixed positions
+                    const angleStep = (2 * Math.PI) / totalDotPositions;
+                    // Offset by half an angle step to center dots within the visual slices
+                    // Subtract PI/2 to start the first segment at the top (12 o'clock)
+                    const angle = (index * angleStep) + (angleStep / 2) - (Math.PI / 2); 
+
+                    const x = Math.cos(angle) * positioningRadius;
+                    const y = Math.sin(angle) * positioningRadius;
+
+                    seg.style.left = `calc(50% + ${x}px)`;
+                    seg.style.top = `calc(50% + ${y}px)`;
+                    seg.style.transform = 'translate(-50%, -50%)'; /* Center the dot itself */
+                });
+            });
+        }
+
+
+        /* ---------- MODAL ---------- */
+        let currentProject; // Store the currently active project
+        let currentSegmentIndex; // Store the index of the currently displayed segment
+
+        function openSegment(projectId, initialSegmentIndex) {
+            currentProject = projects.find(p => p.id === projectId);
+            currentSegmentIndex = initialSegmentIndex;
+
+            // Only open modal if a valid segment exists for this dot
+            if (!currentProject || !currentProject.segments[currentSegmentIndex]) {
+                return; 
+            }
+
+            renderModalContent();
+            renderModalNavigation();
+            
+            document.getElementById('modal').classList.add('active');
+            playClickSound();
+        }
+
+        function renderModalContent() {
+            const segment = currentProject.segments[currentSegmentIndex];
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
+
+            modalTitle.textContent = `PROJECT ${String(currentProject.id).padStart(2, '0')} — ${currentProject.title}`;
+            
+            let content = '';
+            if (segment) { // Check if segment exists, important for hidden dots
+                switch(segment.type) {
+                    case 'text':
+                        content = `<p>${segment.content}</p>`;
+                        break;
+                    case 'image':
+                        content = `<img src="${segment.content}" alt="Segment ${segment.id}">`;
+                        break;
+                    case 'code':
+                        content = `<pre><code>${segment.content}</code></pre>`;
+                        break;
+                }
+                modalBody.innerHTML = `
+                    <h4>SEGMENT ${segment.id}</h4>
+                    ${content}
+                `;
+            } else {
+                 modalBody.innerHTML = `<h4>No content for this segment.</h4>`;
+            }
+        }
+
+        function renderModalNavigation() {
+            const navDotsContainer = document.getElementById('modal-navigation-dots');
+            navDotsContainer.innerHTML = ''; // Clear previous dots
+
+            currentProject.segments.forEach((seg, index) => {
+                const dot = document.createElement('span');
+                dot.classList.add('modal-nav-dot');
+                if (index === currentSegmentIndex) {
+                    dot.classList.add('active');
+                }
+                dot.onclick = () => navigateToSegment(index);
+                navDotsContainer.appendChild(dot);
+            });
+        }
+
+        function navigateToSegment(index) {
+            if (!currentProject || index < 0 || index >= currentProject.segments.length) {
+                return; // Invalid index
+            }
+            currentSegmentIndex = index;
+            renderModalContent();
+            renderModalNavigation(); // Re-render to update active dot
+            playClickSound();
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            // Clear current project/segment data when modal is closed
+            currentProject = null;
+            currentSegmentIndex = -1;
+        }
+
+        function closeIntro() {
+            document.getElementById('intro').classList.add('hidden');
+        }
+
+        function playClickSound() {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.3);
+        }
+
+        /* ---------- INIT ---------- */
+        initializeGrove();
+        arrangeSegmentsRadially(); 
+
+        function initializeGrove() {
+            const grove = document.getElementById('grove');
+            projects.forEach(project => {
+                grove.appendChild(createOrange(project));
+            });
+        }
+
+        // Close modal on background click
+        document.getElementById('modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Close modal on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
